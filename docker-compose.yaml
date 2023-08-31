@@ -1,0 +1,54 @@
+version: '3'
+services:
+nodeexporter:
+image: 'prom/node-exporter:v1.6.0'
+container_name: nodeexporter
+expose:
+- '9100'
+volumes:
+- '/proc:/host/proc:ro'
+- '/sys:/host/sys:ro'
+- '/:/rootfs:ro'
+command:
+- '--path.procfs=/host/proc'
+- '--path.rootfs=/rootfs'
+- '--path.sysfs=/host/sys'
+- >-
+--collector.filesystem.mount-points-exclude=^/(sys|proc|dev|host|etc)($$|/)
+restart: unless-stopped
+network_mode: host
+labels:
+org.label-schema.group: monitoringpromtail:
+image: 'grafana/promtail:2.8.2'
+container_name: promtail
+expose:
+- '9080'
+volumes:
+- '/var/run/docker.sock:/var/run/docker.sock'
+- '/var/log:/var/log:ro'
+- './loki/promtail-config.yaml:/etc/promtail/promtail-config.yaml'
+command: '-config.file=/etc/promtail/promtail-config.yaml'
+restart: unless-stopped
+network_mode: host
+labels:
+org.label-schema.group: monitoring
+cadvisor:
+image: 'gcr.io/cadvisor/cadvisor:v0.47.2'
+container_name: cadvisor
+privileged: true
+expose:
+- '9010'
+command:
+- '-port=9010'
+devices:
+- '/dev/kmsg:/dev/kmsg'
+volumes:
+- '/:/rootfs:ro'
+- '/var/run:/var/run:ro'
+- '/sys:/sys:ro'
+- '/data/docker-data-root/:/var/lib/docker:ro'
+- '/cgroup:/cgroup:ro'
+restart: unless-stopped
+network_mode: host
+labels:
+org.label-schema.group: monitoring
